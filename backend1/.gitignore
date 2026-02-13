@@ -4,8 +4,8 @@ node_modules/
 # Build artifacts (compiled .js and .js.map files)
 # The output directory (commonly 'dist' or 'build') should be ignored
 # Check your tsconfig.json's "outDir" for the correct path
-/dist
-/build
+dist/
+build/
 /*.js
 !.*.js
 /*.map
