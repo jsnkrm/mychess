@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# Build artifacts (compiled .js and .js.map files)
+# The output directory (commonly 'dist' or 'build') should be ignored
+# Check your tsconfig.json's "outDir" for the correct path
+/dist
+/build
+/*.js
+!.*.js
+/*.map
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+# keep .env.example file in git
+!.env.example
+
+# IDE and OS files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.user
+*.bak
+*.njsproj
+*.sln
+*.vssscc
+.npm/
