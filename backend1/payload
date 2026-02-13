@@ -1,0 +1,7 @@
+{ "type" : "move",
+	"move": {
+      "from" : "e2",
+      "to" : "e4"
+    }}
+
+{"type" : "init_game"}
