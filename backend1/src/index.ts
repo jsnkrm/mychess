@@ -13,6 +13,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -45,7 +46,7 @@ passport.use(
     {
       clientID: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      callbackURL: "/auth/google/callback",
+      callbackURL: `${BACKEND_URL}/auth/google/callback`,
     },
     async (_accessToken, _refreshToken, profile, done) => {
       try {
@@ -96,14 +97,33 @@ app.get(
 // WebSocket / Game
 const gameManager = new GameManager();
 
-wss.on("connection", function connection(ws) {
-  gameManager.addUser(ws);
-  ws.on("disconnect", () => gameManager.removeUser(ws));
+wss.on("connection", function connection(ws, req) {
+  const url = new URL(req.url!, `http://${req.headers.host}`);
+  const token = url.searchParams.get("token");
+
+  if (!token) {
+    ws.close(4001, "Missing token");
+    return;
+  }
+
+  try {
+    const user = jwt.verify(token, process.env.SESSION_SECRET!) as {
+      id: string;
+      email: string;
+      name: string;
+    };
+    gameManager.addUser(ws, user);
+  } catch {
+    ws.close(4002, "Invalid token");
+    return;
+  }
+
+  ws.on("close", () => gameManager.removeUser(ws));
 });
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-  console.log(`Auth URL: http://localhost:${PORT}/auth/google`);
-  console.log(`Health check: http://localhost:${PORT}/health`);
+  console.log(`Auth URL: ${BACKEND_URL}/auth/google`);
+  console.log(`Health check: ${BACKEND_URL}/health`);
 });

@@ -6,20 +6,27 @@ import { Login } from "./screens/Login";
 import { useEffect, useState } from "react";
 
 function App() {
-  const [token] = useState(() => {
-    // Check URL or LocalStorage immediately before first render
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get("token") || localStorage.getItem("token") || null;
-  });
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get("token");
+    const storedToken = localStorage.getItem("token");
+    const finalToken = urlToken || storedToken;
+
     if (urlToken) {
       localStorage.setItem("token", urlToken);
       window.history.replaceState({}, document.title, "/");
     }
+
+    setToken(finalToken);
+    setIsLoading(false);
   }, []);
+
+  if (isLoading) {
+    return null;
+  }
 
   return (
     <div className="h-screen bg-slate-900">
