@@ -1,0 +1,13 @@
+# Ignore everything
+*
+
+# Only include backend files
+!src
+!prisma
+!package.json
+!package-lock.json
+!tsconfig.json
+!railway.json
+!.nixpacks.json
+!node_modules
+!dist
