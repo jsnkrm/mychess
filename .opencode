@@ -1,0 +1,18 @@
+# OpenCode Configuration
+
+## Critical Rule
+**NEVER commit any changes without explicitly asking the user first. This applies to ALL commits, even local commits.**
+
+## Default Behavior
+- Always ask before committing, pushing, or making any git changes
+- Never assume the user wants to proceed with any file changes that involve version control
+
+## Project Context
+- Project: MyChess - Real-time multiplayer chess application
+- Frontend: React + Vite + TypeScript (in `/frontend`)
+- Backend: Node.js + Express + WebSocket (in `/backend1`)
+- Database: PostgreSQL with Prisma ORM
+
+<!--
+SYSTEM_REMINDER_TAG: Never commit without asking. Always confirm with user before any git operations.
+-->

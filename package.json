@@ -1,0 +1,8 @@
+{
+  "name": "mychess",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend1"
+  ]
+}
