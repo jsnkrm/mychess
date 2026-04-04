@@ -2,18 +2,8 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "nixpacksJson": {
-      "name": "mychess-backend",
-      "install": {
-        "commands": "npm install --include=dev && npx prisma generate"
-      },
-      "build": {
-        "command": "npm run build"
-      },
-      "start": {
-        "command": "npm run start"
-      }
-    }
+    "buildCommand": "npm ci --include=dev && npm run build",
+    "startCommand": "npm run start"
   },
   "deploy": {
     "numReplicas": 1,
