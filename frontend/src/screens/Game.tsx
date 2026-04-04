@@ -60,9 +60,19 @@ export const Game = () => {
     );
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/login";
+  };
+
   return (
-    // rendered a page with a chess board on the left and a play button on the right to start the game
     <div className="flex items-center justify-center h-screen">
+      <button
+        onClick={handleLogout}
+        className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+      >
+        Logout
+      </button>
       <div className="flex items-center justify-center w-full max-w-4xl bg-white rounded-lg shadow-md p-6">
         <Chessboard socket={socket} board={board} updateBoard={updateBoard} />
         <div className="w-1/2 p-6">

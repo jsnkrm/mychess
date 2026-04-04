@@ -17,7 +17,8 @@ function App() {
 
     if (urlToken) {
       localStorage.setItem("token", urlToken);
-      window.history.replaceState({}, document.title, "/");
+      window.history.replaceState({}, document.title, "/game");
+      window.location.href = "/game";
     }
 
     setToken(finalToken);
