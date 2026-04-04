@@ -2,14 +2,14 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY backend1/package*.json ./
+COPY package*.json ./
 RUN npm ci --include=dev
 
-COPY backend1/prisma ./prisma
+COPY prisma ./prisma
 RUN npx prisma generate
 
-COPY backend1/tsconfig.json ./
-COPY backend1/src ./src
+COPY tsconfig.json ./
+COPY src ./src
 RUN npm run build
 
 EXPOSE 8080
