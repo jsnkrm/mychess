@@ -10,8 +10,6 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get("token");
-    const storedToken = localStorage.getItem("token");
-    const finalToken = urlToken || storedToken;
 
     if (urlToken) {
       localStorage.setItem("token", urlToken);
