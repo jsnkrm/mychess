@@ -1,11 +1,10 @@
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { Landing } from "./screens/Landing";
 import { Game } from "./screens/Game";
 import { useEffect, useState } from "react";
 
 function App() {
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -20,7 +19,6 @@ function App() {
       return;
     }
 
-    setToken(finalToken);
     setIsLoading(false);
   }, []);
 
@@ -33,10 +31,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Landing />} />
-          <Route
-            path="/game"
-            element={token ? <Game /> : <Navigate to="/" />}
-          />
+          <Route path="/game" element={<Game />} />
         </Routes>
       </BrowserRouter>
     </div>

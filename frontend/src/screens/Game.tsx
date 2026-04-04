@@ -9,7 +9,7 @@ export const MOVE = "move";
 export const GAME_OVER = "game_over";
 
 export const Game = () => {
-  const socket = useSocket();
+  const { socket, user } = useSocket();
   const [chess] = useState(new Chess());
   const [board, setBoard] = useState(chess.board());
   const [started, setStarted] = useState(false);
@@ -52,7 +52,7 @@ export const Game = () => {
     };
   }, [socket]);
 
-  if (!socket) {
+  if (!socket || !user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-gray-600 text-4xl">Connecting to the server...</p>
@@ -67,6 +67,11 @@ export const Game = () => {
 
   return (
     <div className="flex items-center justify-center h-screen">
+      <div className="absolute top-4 left-4">
+        <div className="bg-gradient-to-r from-slate-700 to-slate-800 px-4 py-2 rounded-full shadow-lg border border-slate-600">
+          <span className="text-white font-medium tracking-wide">{user.name}</span>
+        </div>
+      </div>
       <button
         onClick={handleLogout}
         className="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"

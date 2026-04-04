@@ -4,8 +4,9 @@ import { INIT_GAME, MOVE } from "./messages";
 
 export interface User {
   id: string;
-  email: string;
+  email: string | null;
   name: string;
+  isGuest?: boolean;
 }
 
 interface UserSocket {

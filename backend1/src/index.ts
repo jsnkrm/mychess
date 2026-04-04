@@ -11,6 +11,7 @@ import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool } from "pg";
+import { USER_INFO } from "./messages";
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8080";
@@ -97,26 +98,64 @@ app.get(
 // WebSocket / Game
 const gameManager = new GameManager();
 
+function generateGuestName(): string {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let name = 'Guest_';
+  for (let i = 0; i < 6; i++) {
+    name += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return name;
+}
+
 wss.on("connection", function connection(ws, req) {
   const url = new URL(req.url!, `http://${req.headers.host}`);
   const token = url.searchParams.get("token");
 
-  if (!token) {
-    ws.close(4001, "Missing token");
-    return;
+  let user: { id: string; email: string | null; name: string; isGuest: boolean };
+
+  if (token && token.startsWith('guest_')) {
+    user = {
+      id: token,
+      email: null,
+      name: generateGuestName(),
+      isGuest: true
+    };
+  } else if (token) {
+    try {
+      const decoded = jwt.verify(token, process.env.SESSION_SECRET!) as {
+        id: string;
+        email: string;
+        name: string;
+      };
+      user = {
+        id: decoded.id,
+        email: decoded.email,
+        name: decoded.name,
+        isGuest: false
+      };
+    } catch {
+      user = {
+        id: `guest_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+        email: null,
+        name: generateGuestName(),
+        isGuest: true
+      };
+    }
+  } else {
+    user = {
+      id: `guest_${Date.now()}_${Math.random().toString(36).substring(7)}`,
+      email: null,
+      name: generateGuestName(),
+      isGuest: true
+    };
   }
 
-  try {
-    const user = jwt.verify(token, process.env.SESSION_SECRET!) as {
-      id: string;
-      email: string;
-      name: string;
-    };
-    gameManager.addUser(ws, user);
-  } catch {
-    ws.close(4002, "Invalid token");
-    return;
-  }
+  gameManager.addUser(ws, user);
+
+  ws.send(JSON.stringify({
+    type: USER_INFO,
+    payload: { user }
+  }));
 
   ws.on("close", () => gameManager.removeUser(ws));
 });
