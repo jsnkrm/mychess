@@ -2,7 +2,6 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import "./App.css";
 import { Landing } from "./screens/Landing";
 import { Game } from "./screens/Game";
-import { Login } from "./screens/Login";
 import { useEffect, useState } from "react";
 
 function App() {
@@ -17,8 +16,8 @@ function App() {
 
     if (urlToken) {
       localStorage.setItem("token", urlToken);
-      window.history.replaceState({}, document.title, "/game");
-      window.location.href = "/game";
+      window.location.replace(window.location.origin + "/game");
+      return;
     }
 
     setToken(finalToken);
@@ -36,9 +35,8 @@ function App() {
           <Route path="/" element={<Landing />} />
           <Route
             path="/game"
-            element={token ? <Game /> : <Navigate to="/login" />}
+            element={token ? <Game /> : <Navigate to="/" />}
           />
-          <Route path="/login" element={<Login />} />
         </Routes>
       </BrowserRouter>
     </div>
