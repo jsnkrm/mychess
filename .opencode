@@ -7,6 +7,11 @@
    - Backend: `npx tsc --noEmit` in `/backend1`
    - Fix any errors before committing
 
+## Naming Conventions
+- **Class-like concepts**: Model as interfaces in a file named `ClassName.ts` (PascalCase), e.g., `GameState.ts`
+- Export the interface with the same name as the file
+- Example: `types/GameState.ts` contains `export interface GameState { ... }`
+
 ## Default Behavior
 - Always ask before committing, pushing, or making any git changes
 - Never assume the user wants to proceed with any file changes that involve version control

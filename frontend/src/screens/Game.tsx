@@ -1,12 +1,32 @@
 /* eslint-disable react-hooks/immutability */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Chessboard } from "../components/Chessboard";
 import { useSocket } from "../hooks/useSocket";
 import { Chess } from "chess.js";
+import type { GameState } from "../types/GameState";
+import { INIT_GAME, MOVE, GAME_OVER, GAME_STATE_KEY } from "../constants";
 
-export const INIT_GAME = "init_game";
-export const MOVE = "move";
-export const GAME_OVER = "game_over";
+export { INIT_GAME, MOVE, GAME_OVER } from "../constants";
+
+const saveGameState = (fen: string, myColor: "white" | "black", turn: "white" | "black", started: boolean) => {
+  const state: GameState = { fen, myColor, turn, started, orientation: myColor, board: [] };
+  localStorage.setItem(GAME_STATE_KEY, JSON.stringify(state));
+};
+
+const loadGameState = (): GameState | null => {
+  const saved = localStorage.getItem(GAME_STATE_KEY);
+  if (!saved) return null;
+  try {
+    const state = JSON.parse(saved) as GameState;
+    return state.started ? state : null;
+  } catch {
+    return null;
+  }
+};
+
+const clearGameState = () => {
+  localStorage.removeItem(GAME_STATE_KEY);
+};
 
 export const Game = () => {
   const { socket, user } = useSocket();
@@ -15,6 +35,19 @@ export const Game = () => {
   const [started, setStarted] = useState(false);
   const [myColor, setMyColor] = useState<"white" | "black" | null>(null);
   const [turn, setTurn] = useState<"white" | "black">("white");
+  const myColorRef = useRef(myColor);
+  myColorRef.current = myColor;
+
+  useEffect(() => {
+    const savedState = loadGameState();
+    if (savedState && savedState.fen && savedState.myColor) {
+      chess.load(savedState.fen);
+      setBoard(chess.board());
+      setMyColor(savedState.myColor);
+      setTurn(savedState.turn);
+      setStarted(savedState.started);
+    }
+  }, [chess]);
 
   const updateBoard = useCallback((move: { from: string; to: string }) => {
     try {
@@ -38,16 +71,19 @@ export const Game = () => {
           setMyColor(message.payload.color);
           setBoard(chess.board());
           setStarted(true);
+          saveGameState(chess.fen(), message.payload.color, "white", true);
           break;
 
         case MOVE:
           console.log("Move received:", message.payload);
           updateBoard(message.payload.move);
           setTurn(chess.turn() as "white" | "black");
+          saveGameState(chess.fen(), myColorRef.current!, chess.turn() as "white" | "black", true);
           break;
 
         case GAME_OVER:
           console.log("Game over! Winner:", message.payload.winner);
+          clearGameState();
           break;
 
         default:
@@ -89,6 +125,7 @@ export const Game = () => {
           updateBoard={updateBoard}
           orientation={myColor}
           turn={turn}
+          started={started}
         />
         <div className="w-1/2 p-6">
           <p className="text-gray-600 mb-4 text-4xl">
@@ -106,6 +143,7 @@ export const Game = () => {
               <button
                 className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
                 onClick={() => {
+                  clearGameState();
                   socket.send(JSON.stringify({ type: INIT_GAME }));
                 }}
               >

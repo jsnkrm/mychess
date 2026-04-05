@@ -1,18 +1,7 @@
-import type { Square, PieceSymbol, Color } from "chess.js";
+import type { Square } from "chess.js";
 import { useState } from "react";
-import { MOVE } from "../screens/Game";
-
-export interface GameState {
-  board: ({
-    square: Square;
-    type: PieceSymbol;
-    color: Color;
-  } | null)[][];
-  socket: WebSocket;
-  updateBoard: (move: { from: Square; to: Square }) => void;
-  orientation: "white" | "black" | null;
-  turn: "white" | "black";
-}
+import { MOVE } from "../constants";
+import type { GameState } from "../types/GameState";
 
 export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: GameState) => {
   const [from, setFrom] = useState<Square | null>(null);
@@ -52,20 +41,21 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
                       return;
                     }
 
-                    //update the the chess board and send the move to the server
-                    updateBoard({ from, to: currentSquare });
+                    if (updateBoard && socket) {
+                      updateBoard({ from, to: currentSquare });
 
-                    socket.send(
-                      JSON.stringify({
-                        type: MOVE,
-                        payload: {
-                          move: {
-                            from,
-                            to: currentSquare,
+                      socket.send(
+                        JSON.stringify({
+                          type: MOVE,
+                          payload: {
+                            move: {
+                              from,
+                              to: currentSquare,
+                            },
                           },
-                        },
-                      }),
-                    );
+                        }),
+                      );
+                    }
                     setFrom(null);
                     setTo(null);
                   }
