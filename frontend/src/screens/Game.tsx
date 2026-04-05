@@ -71,14 +71,16 @@ export const Game = () => {
           setMyColor(message.payload.color);
           setBoard(chess.board());
           setStarted(true);
+          setTurn("white");
           saveGameState(chess.fen(), message.payload.color, "white", true);
           break;
 
         case MOVE:
           console.log("Move received:", message.payload);
           updateBoard(message.payload.move);
-          setTurn(chess.turn() as "white" | "black");
-          saveGameState(chess.fen(), myColorRef.current!, chess.turn() as "white" | "black", true);
+          const newTurn = chess.turn() === 'w' ? "white" : "black";
+          setTurn(newTurn);
+          saveGameState(chess.fen(), myColorRef.current!, newTurn, true);
           break;
 
         case GAME_OVER:
