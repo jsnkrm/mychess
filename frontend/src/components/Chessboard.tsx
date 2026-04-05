@@ -7,19 +7,15 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
   const [from, setFrom] = useState<Square | null>(null);
   const [to, setTo] = useState<Square | null>(null);
 
-  const displayBoard = orientation === "black" ? board.slice().reverse() : board;
-
   const getSquare = (i: number, j: number): Square => {
-    const file = orientation === "black"
-      ? String.fromCharCode(104 - j)
-      : String.fromCharCode(97 + j);
-    const rank = orientation === "black" ? i + 1 : 8 - i;
+    const file = String.fromCharCode(97 + j);
+    const rank = 8 - i;
     return `${file}${rank}` as Square;
   };
   return (
-    <div className="w-1/2 h-auto rounded-lg shadow-md p-6">
+    <div className={`w-1/2 h-auto rounded-lg shadow-md p-6 ${orientation === "black" ? "rotate-180" : ""}`}>
       <div className="grid grid-cols-8 gap-0">
-        {displayBoard.map((row, i) =>
+        {board.map((row, i) =>
           row.map((cell, j) => {
             const isLightSquare = (i + j) % 2 === 0;
             const squareColor = isLightSquare ? "bg-gray-200" : "bg-gray-700";
