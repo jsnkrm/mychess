@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/immutability */
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Chessboard } from "../components/Chessboard";
 import { useSocket } from "../hooks/useSocket";
 import { Chess } from "chess.js";
@@ -13,15 +13,17 @@ export const Game = () => {
   const [chess] = useState(new Chess());
   const [board, setBoard] = useState(chess.board());
   const [started, setStarted] = useState(false);
+  const [myColor, setMyColor] = useState<"white" | "black" | null>(null);
+  const [turn, setTurn] = useState<"white" | "black">("white");
 
-  const updateBoard = (move: { from: string; to: string }) => {
+  const updateBoard = useCallback((move: { from: string; to: string }) => {
     try {
       chess.move(move);
       setBoard(chess.board());
     } catch (error) {
       console.error("Invalid move:", error);
     }
-  };
+  }, [chess]);
 
   useEffect(() => {
     if (!socket) return;
@@ -33,6 +35,7 @@ export const Game = () => {
       switch (message.type) {
         case INIT_GAME:
           console.log("Game initialized with color:", message.payload.color);
+          setMyColor(message.payload.color);
           setBoard(chess.board());
           setStarted(true);
           break;
@@ -40,6 +43,7 @@ export const Game = () => {
         case MOVE:
           console.log("Move received:", message.payload);
           updateBoard(message.payload.move);
+          setTurn(chess.turn() as "white" | "black");
           break;
 
         case GAME_OVER:
@@ -50,7 +54,7 @@ export const Game = () => {
           console.warn("Unknown message type:", message.type);
       }
     };
-  }, [socket]);
+  }, [socket, chess, updateBoard]);
 
   if (!socket || !user) {
     return (
@@ -79,13 +83,24 @@ export const Game = () => {
         Logout
       </button>
       <div className="flex items-center justify-center w-full max-w-4xl bg-white rounded-lg shadow-md p-6">
-        <Chessboard socket={socket} board={board} updateBoard={updateBoard} />
+        <Chessboard
+          board={board}
+          socket={socket}
+          updateBoard={updateBoard}
+          orientation={myColor}
+          turn={turn}
+        />
         <div className="w-1/2 p-6">
           <p className="text-gray-600 mb-4 text-4xl">
             {started
               ? "Game is running!"
               : "Waiting for an opponent to join the game..."}
           </p>
+          {started && (
+            <p className="text-gray-600 mb-4 text-xl">
+              {turn === myColor ? "Your turn" : "Opponent's turn"}
+            </p>
+          )}
           {started ? null : (
             <div className="flex justify-center">
               <button

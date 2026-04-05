@@ -2,11 +2,7 @@ import type { Square, PieceSymbol, Color } from "chess.js";
 import { useState } from "react";
 import { MOVE } from "../screens/Game";
 
-export const Chessboard = ({
-  board,
-  socket,
-  updateBoard,
-}: {
+export interface GameState {
   board: ({
     square: Square;
     type: PieceSymbol;
@@ -14,13 +10,25 @@ export const Chessboard = ({
   } | null)[][];
   socket: WebSocket;
   updateBoard: (move: { from: Square; to: Square }) => void;
-}) => {
+  orientation: "white" | "black" | null;
+  turn: "white" | "black";
+}
+
+export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: GameState) => {
   const [from, setFrom] = useState<Square | null>(null);
   const [to, setTo] = useState<Square | null>(null);
+
+  const displayBoard = orientation === "black" ? board.slice().reverse() : board;
+
+  const getSquare = (i: number, j: number): Square => {
+    const file = String.fromCharCode(orientation === "black" ? 104 - j : 97 + j);
+    const rank = orientation === "black" ? i + 1 : 8 - i;
+    return `${file}${rank}` as Square;
+  };
   return (
     <div className="w-1/2 h-auto rounded-lg shadow-md p-6">
       <div className="grid grid-cols-8 gap-0">
-        {board.map((row, i) =>
+        {displayBoard.map((row, i) =>
           row.map((cell, j) => {
             const isLightSquare = (i + j) % 2 === 0;
             const squareColor = isLightSquare ? "bg-gray-200" : "bg-gray-700";
@@ -29,8 +37,10 @@ export const Chessboard = ({
                 key={`${i}-${j}`}
                 className={`w-12 h-12 flex items-center justify-center ${squareColor}`}
                 onClick={() => {
-                  const currentSquare =
-                    `${String.fromCharCode(97 + j)}${8 - i}` as Square;
+                  if (turn !== (orientation || "white")) {
+                    return;
+                  }
+                  const currentSquare = getSquare(i, j);
                   if (!from) {
                     setFrom(currentSquare);
                   } else {
