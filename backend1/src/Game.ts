@@ -62,7 +62,7 @@ export class Game {
     }
     this.moveNumber++;
 
-    if (this.moveNumber % 2 === 0) {
+    if (socket === this.player1) {
       this.player2.send(
         JSON.stringify({
           type: MOVE,
