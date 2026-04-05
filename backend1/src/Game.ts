@@ -62,25 +62,22 @@ export class Game {
     }
     this.moveNumber++;
 
-    if (socket === this.player1) {
-      this.player2.send(
-        JSON.stringify({
-          type: MOVE,
-          payload: {
-            move: move,
-          },
-        }),
-      );
-    } else {
-      this.player1.send(
-        JSON.stringify({
-          type: MOVE,
-          payload: {
-            move: move,
-          },
-        }),
-      );
-    }
+    this.player1.send(
+      JSON.stringify({
+        type: MOVE,
+        payload: {
+          move: move,
+        },
+      }),
+    );
+    this.player2.send(
+      JSON.stringify({
+        type: MOVE,
+        payload: {
+          move: move,
+        },
+      }),
+    );
   }
 
   hasPlayer(socket: WebSocket): boolean {
