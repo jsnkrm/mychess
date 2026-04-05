@@ -10,8 +10,10 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
   const displayBoard = orientation === "black" ? board.slice().reverse() : board;
 
   const getSquare = (i: number, j: number): Square => {
-    const file = String.fromCharCode(orientation === "black" ? 104 - j : 97 + j);
-    const rank = orientation === "black" ? i + 1 : 8 - i;
+    const file = orientation === "black"
+      ? String.fromCharCode(104 - j)
+      : String.fromCharCode(97 + j);
+    const rank = orientation === "black" ? 8 - i : 8 - i;
     return `${file}${rank}` as Square;
   };
   return (
