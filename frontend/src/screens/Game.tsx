@@ -143,11 +143,6 @@ export const Game = () => {
               ? "Game is running!"
               : "Waiting for an opponent to join the game..."}
           </p>
-          {started && (
-            <p className="text-gray-600 mb-4 text-xl">
-              {turn === myColor ? "Your turn" : "Opponent's turn"}
-            </p>
-          )}
           {started ? null : (
             <div className="flex justify-center">
               <button
