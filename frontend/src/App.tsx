@@ -2,8 +2,8 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { lazy, Suspense, useEffect } from "react";
 import "./App.css";
 
-const Landing = lazy(() => import("./screens/Landing").then(m => ({ default: m.Landing })));
-const Game = lazy(() => import("./screens/Game").then(m => ({ default: m.Game })));
+const Landing = lazy(() => import("./screens/Landing"));
+const Game = lazy(() => import("./screens/Game"));
 
 function Loading() {
   return (
