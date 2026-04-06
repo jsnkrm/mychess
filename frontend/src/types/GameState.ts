@@ -14,3 +14,10 @@ export interface GameState {
   myColor?: "white" | "black";
   started: boolean;
 }
+
+export type GameOverReason = "checkmate" | "resigned" | "draw" | "stalemate" | "time";
+
+export interface GameOverPayload {
+  winner: "white" | "black";
+  reason?: GameOverReason;
+}

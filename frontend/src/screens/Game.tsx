@@ -5,8 +5,15 @@ import { useNavigate } from "react-router-dom";
 import { Chessboard } from "../components/Chessboard";
 import { useSocket } from "../hooks/useSocket";
 import { Chess } from "chess.js";
-import type { GameState } from "../types/GameState";
-import { INIT_GAME, MOVE, GAME_OVER, GAME_STATE_KEY } from "../constants";
+import type { GameState, GameOverPayload } from "../types/GameState";
+import { INIT_GAME, MOVE, GAME_OVER, GAME_STATE_KEY, RESIGN } from "../constants";
+import { Header } from "../components/Header";
+import { Confetti } from "../components/Confetti";
+import { ResignModal } from "../components/ResignModal";
+import { GameOverOverlay } from "../components/GameOverOverlay";
+import { ReadyToPlay } from "../components/ReadyToPlay";
+import { GameInProgress } from "../components/GameInProgress";
+import { GameInfo } from "../components/GameInfo";
 
 export { INIT_GAME, MOVE, GAME_OVER } from "../constants";
 
@@ -38,6 +45,9 @@ export const Game = () => {
   const [started, setStarted] = useState(false);
   const [myColor, setMyColor] = useState<"white" | "black" | null>(null);
   const [turn, setTurn] = useState<"white" | "black">("white");
+  const [showResignModal, setShowResignModal] = useState(false);
+  const [gameOverData, setGameOverData] = useState<GameOverPayload | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
   const myColorRef = useRef<"white" | "black" | null>(null);
 
   useEffect(() => {
@@ -101,6 +111,20 @@ export const Game = () => {
 
         case GAME_OVER:
           clearGameState();
+          setGameOverData(message.payload as GameOverPayload);
+          if (message.payload.winner === myColorRef.current) {
+            setShowConfetti(true);
+            setTimeout(() => setShowConfetti(false), 3000);
+          } else {
+            setTimeout(() => {
+              setGameOverData(null);
+              chess.reset();
+              setBoard(chess.board());
+              setStarted(false);
+              setMyColor(null);
+              setTurn("white");
+            }, 2000);
+          }
           break;
       }
     };
@@ -135,6 +159,24 @@ export const Game = () => {
     setStarted(false);
     setMyColor(null);
     setTurn("white");
+    setGameOverData(null);
+    socket.send(JSON.stringify({ type: INIT_GAME }));
+  };
+
+  const handleResign = () => {
+    socket.send(JSON.stringify({ type: RESIGN }));
+    setShowResignModal(false);
+  };
+
+  const handlePlayAgain = () => {
+    clearGameState();
+    chess.reset();
+    setBoard(chess.board());
+    setStarted(false);
+    setMyColor(null);
+    setTurn("white");
+    setGameOverData(null);
+    setShowConfetti(false);
     socket.send(JSON.stringify({ type: INIT_GAME }));
   };
 
@@ -142,46 +184,15 @@ export const Game = () => {
 
   return (
     <div className="min-h-screen bg-pattern">
+      <Confetti show={showConfetti} />
+
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
       </div>
 
       <div className="relative z-10 max-w-6xl mx-auto px-4 py-6">
-        <header className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-amber-400/20 to-amber-600/20 border border-amber-500/30">
-              <svg className="w-5 h-5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
-            <h1 className="font-display text-2xl font-semibold text-white">
-              My<span className="text-amber-400">Chess</span>
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-card px-4 py-2 rounded-full border border-slate-700/50">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-sm font-semibold text-slate-900">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-              <span className="text-slate-300 font-medium">{user.name}</span>
-              {user.isGuest && (
-                <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">Guest</span>
-              )}
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors focus-visible:ring-2 focus-visible:ring-red-400"
-              aria-label="Logout"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </button>
-          </div>
-        </header>
+        <Header user={user} onLogout={handleLogout} />
 
         <div className="grid lg:grid-cols-[1fr,320px] gap-8">
           <div className="bg-card rounded-2xl p-6 border border-slate-700/50 shadow-card">
@@ -199,7 +210,7 @@ export const Game = () => {
               )}
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center relative">
               <Chessboard
                 board={board}
                 socket={socket}
@@ -208,74 +219,39 @@ export const Game = () => {
                 turn={turn}
                 started={started}
               />
+
+              <GameOverOverlay
+                gameOverData={gameOverData}
+                myColor={myColor}
+                onPlayAgain={handlePlayAgain}
+              />
             </div>
           </div>
 
           <div className="space-y-6">
             <div className="bg-card rounded-2xl p-6 border border-slate-700/50">
-              {!started ? (
-                <>
-                  <h2 className="font-display text-xl text-white mb-3">Ready to Play</h2>
-                  <p className="text-slate-400 text-sm mb-6">
-                    Find an opponent and start a new game
-                  </p>
-                  <button
-                    onClick={handlePlay}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handlePlay();
-                      }
-                    }}
-                    className="w-full py-3 px-6 rounded-xl btn-primary flex items-center justify-center gap-3"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                    Find Opponent
-                  </button>
-                </>
+              {started ? (
+                <GameInProgress
+                  turn={turn}
+                  myColor={myColor}
+                  onResign={() => setShowResignModal(true)}
+                />
               ) : (
-                <>
-                  <h2 className="font-display text-xl text-white mb-3">Game in Progress</h2>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                      <span className="text-slate-400 text-sm">Current Turn</span>
-                      <span className={`font-medium capitalize ${turn === myColor ? 'text-amber-400' : 'text-slate-500'}`}>
-                        {turn}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-between p-3 bg-slate-800/50 rounded-lg">
-                      <span className="text-slate-400 text-sm">Your Color</span>
-                      <span className="font-medium capitalize text-amber-400">{myColor}</span>
-                    </div>
-                  </div>
-                </>
+                <ReadyToPlay onStartGame={handlePlay} />
               )}
             </div>
 
-            <div className="bg-card rounded-2xl p-6 border border-slate-700/50">
-              <h3 className="text-slate-400 text-sm font-medium mb-4">Game Info</h3>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Status</span>
-                  <span className="text-slate-300">{started ? "Active" : "Idle"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Mode</span>
-                  <span className="text-slate-300">Classic</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Connection</span>
-                  <span className={`${isReconnecting ? 'text-yellow-400' : 'text-emerald-400'}`}>
-                    {isReconnecting ? 'Reconnecting...' : 'Connected'}
-                  </span>
-                </div>
-              </div>
-            </div>
+            <GameInfo started={started} isReconnecting={isReconnecting} />
           </div>
         </div>
       </div>
+
+      {showResignModal && (
+        <ResignModal
+          onConfirm={handleResign}
+          onCancel={() => setShowResignModal(false)}
+        />
+      )}
     </div>
   );
 };

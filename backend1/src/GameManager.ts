@@ -1,6 +1,6 @@
 import { Game } from "./Game";
 import { WebSocket } from "ws";
-import { INIT_GAME, MOVE } from "./messages";
+import { INIT_GAME, MOVE, RESIGN } from "./messages";
 
 export interface User {
   id: string;
@@ -59,6 +59,12 @@ export class GameManager {
         const game = this.games.find((g) => g.hasPlayer(socket));
         if (game) {
           game.makeMove(socket, message.payload.move);
+        }
+      }
+      if (message.type === RESIGN) {
+        const game = this.games.find((g) => g.hasPlayer(socket));
+        if (game) {
+          game.resign(socket);
         }
       }
     });

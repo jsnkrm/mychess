@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { Chess } from "chess.js";
-import { INIT_GAME, MOVE } from "./messages";
+import { INIT_GAME, MOVE, RESIGN } from "./messages";
 export class Game {
   private player1: WebSocket;
   private player2: WebSocket;
@@ -82,5 +82,23 @@ export class Game {
 
   hasPlayer(socket: WebSocket): boolean {
     return socket === this.player1 || socket === this.player2;
+  }
+
+  resign(socket: WebSocket): void {
+    const winner = socket === this.player1 ? "black" : "white";
+    console.log(`Player resigned. Winner: ${winner}`);
+
+    this.player1.send(
+      JSON.stringify({
+        type: "GAME_OVER",
+        payload: { winner, reason: "resigned" },
+      }),
+    );
+    this.player2.send(
+      JSON.stringify({
+        type: "GAME_OVER",
+        payload: { winner, reason: "resigned" },
+      }),
+    );
   }
 }
