@@ -3,35 +3,6 @@ import { useState } from "react";
 import { MOVE } from "../constants";
 import type { GameState } from "../types/GameState";
 
-const getSquareColor = (
-  isInvalidSquare: boolean,
-  isLightSquare: boolean,
-  cell: { color: "w" | "b"; type: string } | null,
-  turn: "white" | "black"
-): string => {
-  if (isInvalidSquare) {
-    return "bg-red-500";
-  }
-
-  if (!cell) {
-    return isLightSquare ? "bg-gray-200" : "bg-gray-700";
-  }
-
-  const isWhitePiece = cell.color === "w";
-  const isBlackPiece = cell.color === "b";
-  const isMyPiece = (turn === "white" && isWhitePiece) || (turn === "black" && isBlackPiece);
-  const isOpponentPiece = (turn === "white" && isBlackPiece) || (turn === "black" && isWhitePiece);
-
-  switch (true) {
-    case isMyPiece:
-      return isLightSquare ? "bg-green-200" : "bg-green-600";
-    case isOpponentPiece:
-      return isLightSquare ? "bg-red-200" : "bg-red-600";
-    default:
-      return isLightSquare ? "bg-gray-200" : "bg-gray-700";
-  }
-};
-
 export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: GameState) => {
   const [from, setFrom] = useState<Square | null>(null);
   const [to, setTo] = useState<Square | null>(null);
@@ -42,6 +13,14 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
     const rank = 8 - i;
     return `${file}${rank}` as Square;
   };
+
+  const getSquareColor = (isInvalidSquare: boolean, isLightSquare: boolean): string => {
+    if (isInvalidSquare) {
+      return "bg-red-500";
+    }
+    return isLightSquare ? "bg-gray-200" : "bg-gray-700";
+  };
+
   return (
     <div className={`w-1/2 h-auto rounded-lg shadow-md p-6 ${orientation === "black" ? "rotate-180" : ""}`}>
       <div className="grid grid-cols-8 gap-0">
@@ -50,10 +29,12 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
             const currentSquareKey = getSquare(i, j);
             const isLightSquare = (i + j) % 2 === 0;
             const isInvalidSquare = !!(invalidMove && (currentSquareKey === invalidMove.from || currentSquareKey === invalidMove.to));
-            const squareColor = getSquareColor(isInvalidSquare, isLightSquare, cell, turn);
-            const isMyTurn = turn === (orientation || "white");
-            const isMyPiece = cell && ((turn === "white" && cell.color === "w") || (turn === "black" && cell.color === "b"));
-            const pieceOpacity = isMyTurn && cell && !isMyPiece ? "opacity-50" : "";
+            const squareColor = getSquareColor(isInvalidSquare, isLightSquare);
+            
+            const turnColor = turn === "white" ? "w" : "b";
+            const isMyPiece = cell?.color === turnColor;
+            const pieceOpacity = isMyPiece ? "" : "opacity-50";
+            
             return (
               <div
                 key={`${i}-${j}`}
