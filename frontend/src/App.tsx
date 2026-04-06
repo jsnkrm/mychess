@@ -1,8 +1,17 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
 import "./App.css";
-import { Landing } from "./screens/Landing";
-import { Game } from "./screens/Game";
-import { useEffect } from "react";
+
+const Landing = lazy(() => import("./screens/Landing").then(m => ({ default: m.Landing })));
+const Game = lazy(() => import("./screens/Game").then(m => ({ default: m.Game })));
+
+function Loading() {
+  return (
+    <div className="flex items-center justify-center h-screen bg-slate-900">
+      <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
+}
 
 function App() {
   useEffect(() => {
@@ -18,10 +27,12 @@ function App() {
   return (
     <div className="h-screen bg-slate-900">
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing />} />
-          <Route path="/game" element={<Game />} />
-        </Routes>
+        <Suspense fallback={<Loading />}>
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/game" element={<Game />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </div>
   );

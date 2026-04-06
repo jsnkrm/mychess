@@ -9,59 +9,96 @@ interface User {
   isGuest: boolean;
 }
 
+const MAX_RECONNECT_DELAY = 30000;
+const INITIAL_RECONNECT_DELAY = 1000;
+
 export const useSocket = () => {
   const [socket, setSocket] = useState<WebSocket | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptRef = useRef(0);
+  const reconnectFnRef = useRef<() => void>(() => {});
+
+  const scheduleReconnect = () => {
+    const delay = Math.min(
+      INITIAL_RECONNECT_DELAY * Math.pow(2, reconnectAttemptRef.current),
+      MAX_RECONNECT_DELAY
+    );
+    reconnectAttemptRef.current += 1;
+    
+    reconnectTimeoutRef.current = setTimeout(() => {
+      reconnectFnRef.current();
+    }, delay);
+  };
 
   useEffect(() => {
-    if (wsRef.current?.readyState === WebSocket.OPEN) {
-      return;
-    }
-
-    const loginToken = localStorage.getItem("token");
-    let guestId = localStorage.getItem("guestId");
-    
-    if (!guestId) {
-      guestId = `guest_${crypto.randomUUID()}`;
-      localStorage.setItem("guestId", guestId);
-    }
-
-    const token = loginToken || guestId;
-    const wsUrl = `${WS_URL}?token=${encodeURIComponent(token)}`;
-    const ws = new WebSocket(wsUrl);
-    wsRef.current = ws;
-
-    ws.onopen = () => {
-      console.log("WebSocket connection established");
-      setSocket(ws);
-    };
-
-    const handleMessage = (event: MessageEvent) => {
-      const message = JSON.parse(event.data);
-      if (message.type === "user_info") {
-        setUser(message.payload.user);
+    const doConnect = () => {
+      if (wsRef.current?.readyState === WebSocket.OPEN || wsRef.current?.readyState === WebSocket.CONNECTING) {
+        return;
       }
+
+      setIsConnecting(true);
+      
+      const loginToken = localStorage.getItem("token");
+      let guestId = localStorage.getItem("guestId");
+      
+      if (!guestId) {
+        guestId = `guest_${crypto.randomUUID()}`;
+        localStorage.setItem("guestId", guestId);
+      }
+
+      const token = loginToken || guestId;
+      const wsUrl = `${WS_URL}?token=${encodeURIComponent(token)}`;
+      const ws = new WebSocket(wsUrl);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setSocket(ws);
+        setIsConnecting(false);
+        setIsReconnecting(false);
+        reconnectAttemptRef.current = 0;
+      };
+
+      const handleMessage = (event: MessageEvent) => {
+        const message = JSON.parse(event.data);
+        if (message.type === "user_info") {
+          setUser(message.payload.user);
+        }
+      };
+
+      ws.addEventListener("message", handleMessage);
+
+      ws.onclose = (event) => {
+        setSocket(null);
+        setUser(null);
+        wsRef.current = null;
+
+        if (!event.wasClean) {
+          setIsReconnecting(true);
+          scheduleReconnect();
+        }
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
     };
 
-    ws.addEventListener("message", handleMessage);
-
-    ws.onclose = (event) => {
-      console.log("WebSocket connection closed", event.code, event.reason);
-      setSocket(null);
-      setUser(null);
-      wsRef.current = null;
-    };
-
-    ws.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
+    reconnectFnRef.current = doConnect;
+    doConnect();
 
     return () => {
-      ws.removeEventListener("message", handleMessage);
-      ws.close();
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
     };
   }, []);
 
-  return { socket, user };
+  return { socket, user, isConnecting, isReconnecting };
 };
