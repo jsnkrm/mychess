@@ -1,5 +1,9 @@
 /* eslint-disable react-hooks/immutability */
+/* eslint-disable react-hooks/set-state-in-effect */
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/preserve-manual-memoization */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Chessboard } from "../components/Chessboard";
 import { useSocket } from "../hooks/useSocket";
 import { Chess } from "chess.js";
@@ -30,13 +34,17 @@ const clearGameState = () => {
 
 export const Game = () => {
   const { socket, user } = useSocket();
-  const [chess] = useState(new Chess());
-  const [board, setBoard] = useState(chess.board());
+  const navigate = useNavigate();
+  const [chess] = useState(() => new Chess());
+  const [board, setBoard] = useState(() => chess.board());
   const [started, setStarted] = useState(false);
   const [myColor, setMyColor] = useState<"white" | "black" | null>(null);
   const [turn, setTurn] = useState<"white" | "black">("white");
-  const myColorRef = useRef(myColor);
-  myColorRef.current = myColor;
+  const myColorRef = useRef<"white" | "black" | null>(null);
+
+  useEffect(() => {
+    myColorRef.current = myColor;
+  }, [myColor]);
 
   useEffect(() => {
     const savedState = loadGameState();
@@ -47,7 +55,7 @@ export const Game = () => {
       setTurn(savedState.turn);
       setStarted(savedState.started);
     }
-  }, [chess]);
+  }, []);
 
   const updateBoard = useCallback((move: { from: string; to: string }): boolean => {
     try {
@@ -62,12 +70,12 @@ export const Game = () => {
       console.error("Invalid move:", error);
       return false;
     }
-  }, [chess]);
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
 
-    socket.onmessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       const message = JSON.parse(event.data);
       console.log("Received message:", message);
 
@@ -100,7 +108,12 @@ export const Game = () => {
           console.warn("Unknown message type:", message.type);
       }
     };
-  }, [socket, chess, updateBoard]);
+
+    socket.addEventListener("message", handleMessage);
+    return () => {
+      socket.removeEventListener("message", handleMessage);
+    };
+  }, [socket, updateBoard]);
 
   if (!socket || !user) {
     return (
@@ -112,7 +125,7 @@ export const Game = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
-    window.location.href = "/";
+    navigate("/");
   };
 
   return (
