@@ -1,6 +1,12 @@
 import { WebSocket } from "ws";
 import { Chess } from "chess.js";
-import { INIT_GAME, MOVE, RESIGN } from "./messages";
+import { INIT_GAME, MOVE } from "./messages";
+
+interface GameOverPayload {
+  winner: "white" | "black";
+  reason: "checkmate" | "draw" | "stalemate" | "resigned";
+}
+
 export class Game {
   private player1: WebSocket;
   private player2: WebSocket;
@@ -39,45 +45,56 @@ export class Game {
       console.error("Invalid move: Not player's turn");
       return;
     }
+
     try {
       this.board.move(move);
     } catch (error) {
       console.error("Invalid move:", error);
-    }
-
-    if (this.board.isGameOver()) {
-      this.player1.send(
-        JSON.stringify({
-          type: "GAME_OVER",
-          payload: { winner: this.board.turn() === "w" ? "black" : "white" },
-        }),
-      );
-      this.player2.send(
-        JSON.stringify({
-          type: "GAME_OVER",
-          payload: { winner: this.board.turn() === "w" ? "black" : "white" },
-        }),
-      );
       return;
     }
-    this.moveNumber++;
 
-    this.player1.send(
-      JSON.stringify({
-        type: MOVE,
-        payload: {
-          move: move,
-        },
-      }),
-    );
-    this.player2.send(
-      JSON.stringify({
-        type: MOVE,
-        payload: {
-          move: move,
-        },
-      }),
-    );
+    const movePayload = JSON.stringify({ type: MOVE, payload: { move } });
+    this.player1.send(movePayload);
+    this.player2.send(movePayload);
+
+    if (this.checkAndHandleGameOver(socket)) {
+      return;
+    }
+
+    this.moveNumber++;
+  }
+
+  private checkAndHandleGameOver(sender: WebSocket): boolean {
+    if (!this.board.isGameOver()) {
+      return false;
+    }
+
+    if (this.board.isCheckmate()) {
+      const winner = sender === this.player1 ? "white" : "black";
+      const payload: GameOverPayload = { winner, reason: "checkmate" };
+      this.sendGameOver(payload);
+      return true;
+    }
+
+    if (this.board.isStalemate()) {
+      const payload: GameOverPayload = { winner: "white", reason: "stalemate" };
+      this.sendGameOver(payload);
+      return true;
+    }
+
+    if (this.board.isDraw()) {
+      const payload: GameOverPayload = { winner: "white", reason: "draw" };
+      this.sendGameOver(payload);
+      return true;
+    }
+
+    return false;
+  }
+
+  private sendGameOver(payload: GameOverPayload): void {
+    const gameOverMessage = JSON.stringify({ type: "GAME_OVER", payload });
+    this.player1.send(gameOverMessage);
+    this.player2.send(gameOverMessage);
   }
 
   hasPlayer(socket: WebSocket): boolean {
@@ -88,17 +105,7 @@ export class Game {
     const winner = socket === this.player1 ? "black" : "white";
     console.log(`Player resigned. Winner: ${winner}`);
 
-    this.player1.send(
-      JSON.stringify({
-        type: "GAME_OVER",
-        payload: { winner, reason: "resigned" },
-      }),
-    );
-    this.player2.send(
-      JSON.stringify({
-        type: "GAME_OVER",
-        payload: { winner, reason: "resigned" },
-      }),
-    );
+    const payload: GameOverPayload = { winner, reason: "resigned" };
+    this.sendGameOver(payload);
   }
 }
