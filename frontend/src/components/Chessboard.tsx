@@ -1,25 +1,62 @@
 import type { Square } from "chess.js";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { MOVE } from "../constants";
 import type { GameState } from "../types/GameState";
 
+const getSquare = (i: number, j: number): Square => {
+  const file = String.fromCharCode(97 + j);
+  const rank = 8 - i;
+  return `${file}${rank}` as Square;
+};
+
+const getSquareColor = (isInvalidSquare: boolean, isLightSquare: boolean): string => {
+  if (isInvalidSquare) {
+    return "bg-red-500";
+  }
+  return isLightSquare ? "bg-gray-200" : "bg-gray-700";
+};
+
 export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: GameState) => {
   const [from, setFrom] = useState<Square | null>(null);
-  const [to, setTo] = useState<Square | null>(null);
   const [invalidMove, setInvalidMove] = useState<{ from: Square; to: Square } | null>(null);
 
-  const getSquare = (i: number, j: number): Square => {
-    const file = String.fromCharCode(97 + j);
-    const rank = 8 - i;
-    return `${file}${rank}` as Square;
-  };
-
-  const getSquareColor = (isInvalidSquare: boolean, isLightSquare: boolean): string => {
-    if (isInvalidSquare) {
-      return "bg-red-500";
+  const handleSquareClick = useCallback((currentSquare: Square) => {
+    if (turn !== (orientation || "white")) {
+      return;
     }
-    return isLightSquare ? "bg-gray-200" : "bg-gray-700";
-  };
+    if (!from) {
+      setFrom(currentSquare);
+    } else {
+      if (from === currentSquare) {
+        setFrom(null);
+        return;
+      }
+
+      if (updateBoard && socket) {
+        const isValid = updateBoard({ from, to: currentSquare });
+
+        if (!isValid) {
+          setInvalidMove({ from, to: currentSquare });
+          setTimeout(() => setInvalidMove(null), 2000);
+          setFrom(null);
+          return;
+        }
+
+        socket.send(
+          JSON.stringify({
+            type: MOVE,
+            payload: {
+              move: {
+                from,
+                to: currentSquare,
+              },
+            },
+          }),
+        );
+      }
+      setFrom(null);
+    }
+  }, [from, orientation, turn, updateBoard, socket]);
 
   return (
     <div className={`w-1/2 h-auto rounded-lg shadow-md p-6 ${orientation === "black" ? "rotate-180" : ""}`}>
@@ -39,50 +76,7 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
               <div
                 key={`${i}-${j}`}
                 className={`w-12 h-12 flex items-center justify-center ${squareColor}`}
-                onClick={() => {
-                  if (turn !== (orientation || "white")) {
-                    return;
-                  }
-                  const currentSquare = getSquare(i, j);
-                  if (!from) {
-                    setFrom(currentSquare);
-                  } else {
-                    setTo(currentSquare);
-
-                    if (from === to) {
-                      setFrom(null);
-                      setTo(null);
-                      return;
-                    }
-
-                    if (updateBoard && socket) {
-                      const isValid = updateBoard({ from, to: currentSquare });
-
-                      if (!isValid) {
-                        setInvalidMove({ from, to: currentSquare });
-                        setTimeout(() => setInvalidMove(null), 2000);
-                        setFrom(null);
-                        setTo(null);
-                        return;
-                      }
-
-                      socket.send(
-                        JSON.stringify({
-                          type: MOVE,
-                          payload: {
-                            move: {
-                              from,
-                              to: currentSquare,
-                            },
-                          },
-                        }),
-                      );
-                    }
-                    setFrom(null);
-                    setTo(null);
-                  }
-                  console.log("Clicked on square:", from, to);
-                }}
+                onClick={() => handleSquareClick(currentSquareKey)}
               >
                 {cell && (
                   <img
