@@ -49,12 +49,18 @@ export const Game = () => {
     }
   }, [chess]);
 
-  const updateBoard = useCallback((move: { from: string; to: string }) => {
+  const updateBoard = useCallback((move: { from: string; to: string }): boolean => {
     try {
-      chess.move(move);
+      const result = chess.move(move);
+      if (!result) {
+        console.error("Invalid move:", move);
+        return false;
+      }
       setBoard(chess.board());
+      return true;
     } catch (error) {
       console.error("Invalid move:", error);
+      return false;
     }
   }, [chess]);
 

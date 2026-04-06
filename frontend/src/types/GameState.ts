@@ -7,7 +7,7 @@ export interface GameState {
     color: Color;
   } | null)[][];
   socket?: WebSocket;
-  updateBoard?: (move: { from: Square; to: Square }) => void;
+  updateBoard?: (move: { from: Square; to: Square }) => boolean;
   orientation: "white" | "black" | null;
   turn: "white" | "black";
   fen?: string;

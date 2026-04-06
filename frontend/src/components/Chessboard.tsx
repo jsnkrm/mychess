@@ -6,6 +6,7 @@ import type { GameState } from "../types/GameState";
 export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: GameState) => {
   const [from, setFrom] = useState<Square | null>(null);
   const [to, setTo] = useState<Square | null>(null);
+  const [invalidMove, setInvalidMove] = useState<{ from: Square; to: Square } | null>(null);
 
   const getSquare = (i: number, j: number): Square => {
     const file = String.fromCharCode(97 + j);
@@ -17,8 +18,14 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
       <div className="grid grid-cols-8 gap-0">
         {board.map((row, i) =>
           row.map((cell, j) => {
+            const currentSquareKey = getSquare(i, j);
             const isLightSquare = (i + j) % 2 === 0;
-            const squareColor = isLightSquare ? "bg-gray-200" : "bg-gray-700";
+            const isInvalidSquare = invalidMove && (currentSquareKey === invalidMove.from || currentSquareKey === invalidMove.to);
+            const squareColor = isInvalidSquare 
+              ? "bg-red-500" 
+              : isLightSquare 
+                ? "bg-gray-200" 
+                : "bg-gray-700";
             return (
               <div
                 key={`${i}-${j}`}
@@ -40,7 +47,15 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
                     }
 
                     if (updateBoard && socket) {
-                      updateBoard({ from, to: currentSquare });
+                      const isValid = updateBoard({ from, to: currentSquare });
+
+                      if (!isValid) {
+                        setInvalidMove({ from, to: currentSquare });
+                        setTimeout(() => setInvalidMove(null), 2000);
+                        setFrom(null);
+                        setTo(null);
+                        return;
+                      }
 
                       socket.send(
                         JSON.stringify({

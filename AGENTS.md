@@ -5,6 +5,7 @@ Context for agentic coding agents in this repository.
 ## General
 
 - Read framework docs before coding — docs are the source of truth, training data is outdated
+- **chess.js**: Read the full README at https://www.npmjs.com/package/chess.js at the start of every session to understand full capabilities
 
 ## Project
 
