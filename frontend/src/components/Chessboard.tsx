@@ -67,7 +67,7 @@ export const Chessboard = ({ board, socket, updateBoard, orientation, turn }: Ga
                         ? `b${cell.type.toUpperCase()}`
                         : `w${cell.type.toUpperCase()}`
                     }.svg`}
-                    className="w-10 h-10"
+                    className={`w-10 h-10 ${orientation === "black" ? "rotate-180" : ""}`}
                     alt={cell.type}
                   />
                 )}

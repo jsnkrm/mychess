@@ -78,9 +78,11 @@ export const Game = () => {
         case MOVE:
           console.log("Move received:", message.payload);
           updateBoard(message.payload.move);
-          const newTurn = chess.turn() === 'w' ? "white" : "black";
-          setTurn(newTurn);
-          saveGameState(chess.fen(), myColorRef.current!, newTurn, true);
+          {
+            const newTurn = chess.turn() === 'w' ? "white" : "black";
+            setTurn(newTurn);
+            saveGameState(chess.fen(), myColorRef.current!, newTurn, true);
+          }
           break;
 
         case GAME_OVER:
