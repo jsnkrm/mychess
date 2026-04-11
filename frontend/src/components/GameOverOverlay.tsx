@@ -17,11 +17,13 @@ export const GameOverOverlay = ({ gameOverData, myColor, onPlayAgain }: GameOver
       if (reason === "resigned") return "You won! Opponent resigned";
       if (reason === "checkmate") return "You won! Checkmate";
       if (reason === "draw") return "You won! Draw";
+      if (reason === "abandoned") return "You won! Opponent abandoned the game";
       return "You won!";
     } else {
       if (reason === "resigned") return "You resigned";
       if (reason === "checkmate") return "Checkmate! You lost";
       if (reason === "draw") return "Draw";
+      if (reason === "abandoned") return "Game abandoned";
       return "You lost";
     }
   };

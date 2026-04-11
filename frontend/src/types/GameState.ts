@@ -15,7 +15,7 @@ export interface GameState {
   started: boolean;
 }
 
-export type GameOverReason = "checkmate" | "resigned" | "draw" | "stalemate" | "time";
+export type GameOverReason = "checkmate" | "resigned" | "draw" | "stalemate" | "time" | "abandoned";
 
 export interface GameOverPayload {
   winner: "white" | "black";

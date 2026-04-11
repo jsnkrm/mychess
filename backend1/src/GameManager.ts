@@ -27,18 +27,37 @@ export class GameManager {
 
   addUser(socket: WebSocket, user: User) {
     this.users.set(socket, user);
+
+    const existing = this.findGameByUserId(user.id);
+    if (existing && !existing.isUserLive(user.id)) {
+      existing.reattach(user.id, socket);
+    }
+
     this.addHandler(socket);
   }
 
   removeUser(socket: WebSocket) {
+    const user = this.users.get(socket);
     this.users.delete(socket);
+
     if (this.pendingUser?.socket === socket) {
       this.pendingUser = null;
+    }
+
+    if (user) {
+      const game = this.findGameByUserId(user.id);
+      if (game && !game.ended && game.hasPlayer(socket)) {
+        game.markDisconnected(user.id);
+      }
     }
   }
 
   getUser(socket: WebSocket): User | undefined {
     return this.users.get(socket);
+  }
+
+  private findGameByUserId(userId: string): Game | undefined {
+    return this.games.find((g) => g.hasUser(userId) && !g.ended);
   }
 
   private addHandler(socket: WebSocket) {
@@ -47,11 +66,32 @@ export class GameManager {
       const user = this.users.get(socket);
 
       if (message.type === INIT_GAME) {
+        if (!user) return;
+
+        // Reject if user is already in an active game (duplicate tab or
+        // reconnecting client that re-emitted INIT_GAME from restored state).
+        if (this.findGameByUserId(user.id)) {
+          return;
+        }
+
         if (this.pendingUser) {
-          const game = new Game(this.pendingUser.socket, socket);
-          this.games.push(game);
+          if (this.pendingUser.user.id === user.id) {
+            // Same user as pending — ignore.
+            return;
+          }
+          const pending = this.pendingUser;
           this.pendingUser = null;
-        } else if (user) {
+          const game = new Game(
+            pending.user.id,
+            pending.socket,
+            user.id,
+            socket,
+            (g) => {
+              this.games = this.games.filter((x) => x !== g);
+            },
+          );
+          this.games.push(game);
+        } else {
           this.pendingUser = { socket, user };
         }
       }

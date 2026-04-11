@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  USER_INFO,
+  OPPONENT_DISCONNECTED,
+  OPPONENT_RECONNECTED,
+  GAME_OVER,
+} from "../constants";
 
 const WS_URL = import.meta.env.VITE_WS_URL || "ws://localhost:8080/ws";
+
+export interface OpponentStatus {
+  disconnected: boolean;
+  expiresAt?: number;
+}
 
 interface User {
   id: string;
@@ -17,6 +28,9 @@ export const useSocket = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isReconnecting, setIsReconnecting] = useState(false);
+  const [opponentStatus, setOpponentStatus] = useState<OpponentStatus>({
+    disconnected: false,
+  });
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
@@ -64,8 +78,17 @@ export const useSocket = () => {
 
       const handleMessage = (event: MessageEvent) => {
         const message = JSON.parse(event.data);
-        if (message.type === "user_info") {
+        if (message.type === USER_INFO) {
           setUser(message.payload.user);
+        } else if (message.type === OPPONENT_DISCONNECTED) {
+          setOpponentStatus({
+            disconnected: true,
+            expiresAt: message.payload.expiresAt,
+          });
+        } else if (message.type === OPPONENT_RECONNECTED) {
+          setOpponentStatus({ disconnected: false });
+        } else if (message.type === GAME_OVER) {
+          setOpponentStatus({ disconnected: false });
         }
       };
 
@@ -100,5 +123,5 @@ export const useSocket = () => {
     };
   }, []);
 
-  return { socket, user, isConnecting, isReconnecting };
+  return { socket, user, isConnecting, isReconnecting, opponentStatus };
 };

@@ -38,7 +38,7 @@ const clearGameState = () => {
 };
 
 export const Game = () => {
-  const { socket, user, isConnecting, isReconnecting } = useSocket();
+  const { socket, user, isConnecting, isReconnecting, opponentStatus } = useSocket();
   const navigate = useNavigate();
   const [chess] = useState(() => new Chess());
   const [board, setBoard] = useState(() => chess.board());
@@ -241,7 +241,7 @@ export const Game = () => {
               )}
             </div>
 
-            <GameInfo started={started} isReconnecting={isReconnecting} />
+            <GameInfo started={started} isReconnecting={isReconnecting} opponentStatus={opponentStatus} />
           </div>
         </div>
       </div>

@@ -1,9 +1,31 @@
+import { useEffect, useState } from "react";
+import type { OpponentStatus } from "../hooks/useSocket";
+
 interface GameInfoProps {
   started: boolean;
   isReconnecting: boolean;
+  opponentStatus: OpponentStatus;
 }
 
-export const GameInfo = ({ started, isReconnecting }: GameInfoProps) => {
+export const GameInfo = ({ started, isReconnecting, opponentStatus }: GameInfoProps) => {
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!opponentStatus.disconnected || !opponentStatus.expiresAt) {
+      setSecondsLeft(null);
+      return;
+    }
+
+    const expiresAt = opponentStatus.expiresAt;
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000));
+      setSecondsLeft(remaining);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [opponentStatus.disconnected, opponentStatus.expiresAt]);
+
   return (
     <div className="bg-card rounded-2xl p-6 border border-slate-700/50">
       <h3 className="text-slate-400 text-sm font-medium mb-4">Game Info</h3>
@@ -23,6 +45,18 @@ export const GameInfo = ({ started, isReconnecting }: GameInfoProps) => {
           </span>
         </div>
       </div>
+      {opponentStatus.disconnected && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="mt-4 p-3 rounded-xl border border-yellow-500/40 bg-yellow-500/10 text-yellow-200 text-sm"
+        >
+          Opponent disconnected
+          {secondsLeft !== null && (
+            <> — forfeits in {secondsLeft}s</>
+          )}
+        </div>
+      )}
     </div>
   );
 };
